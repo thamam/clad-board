@@ -1,0 +1,16 @@
+# Add this service to your bot's docker-compose.yml
+# Replace ${BOT_TOKEN} with the token from dashboard registration
+
+services:
+  sidecar:
+    image: bot-dashboard-sidecar:latest
+    build:
+      context: ./sidecar  # or path to clad-board/sidecar/
+      dockerfile: Dockerfile
+    environment:
+      - DASHBOARD_URL=https://dashboard.neuronbox.ai
+      - REGISTRATION_TOKEN=${BOT_TOKEN}
+      - LOG_PATH=/logs/bot.log
+    volumes:
+      - ./logs:/logs:ro
+    restart: unless-stopped
