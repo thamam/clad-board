@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deployment verification script for Bot Monitoring Dashboard
-# Usage: DASHBOARD_URL=https://dashboard.neuronbox.ai ./scripts/verify_deployment.sh
+# Usage: DASHBOARD_URL=https://dashboard.a2xautonomy.com ./scripts/verify_deployment.sh
 
 set -euo pipefail
 

@@ -8,7 +8,7 @@ services:
       context: ./sidecar  # or path to clad-board/sidecar/
       dockerfile: Dockerfile
     environment:
-      - DASHBOARD_URL=https://dashboard.neuronbox.ai
+      - DASHBOARD_URL=https://dashboard.a2xautonomy.com
       - REGISTRATION_TOKEN=${BOT_TOKEN}
       - LOG_PATH=/logs/bot.log
     volumes:
