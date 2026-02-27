@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from backend.auth import require_bot_token
 from backend.database import get_session
-from backend.models import Bot, Event, IngestEvent, TokenAggregate, utcnow
+from backend.models import Bot, ChannelStatus, Event, IngestEvent, TokenAggregate, utcnow
 
 router = APIRouter(prefix="/api", tags=["ingestion"])
 
@@ -51,6 +51,33 @@ def _process_event(event: IngestEvent, bot: Bot, session: Session) -> None:
                 tokens_out_total=tokens_out,
             )
         session.add(agg)
+
+    elif event.event_type == "channel_status":
+        channel_name = event.payload.get("channel_name", "unknown")
+        new_status = event.payload.get("status", "connected")
+        error_message = event.payload.get("error_message")
+
+        ch = session.exec(
+            select(ChannelStatus).where(
+                ChannelStatus.bot_id == bot.id,
+                ChannelStatus.channel_name == channel_name,
+            )
+        ).first()
+
+        if ch:
+            if ch.status != new_status:
+                ch.status = new_status
+                ch.last_status_change = utcnow()
+            ch.error_message = error_message
+            ch.last_seen = utcnow()
+        else:
+            ch = ChannelStatus(
+                bot_id=bot.id,
+                channel_name=channel_name,
+                status=new_status,
+                error_message=error_message,
+            )
+        session.add(ch)
 
 
 @router.post("/ingest")

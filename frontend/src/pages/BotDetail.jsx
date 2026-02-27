@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useBotDetail } from "../api";
+import { ChannelStatusDot } from "../components/ChannelHealthBadge";
 import StatusBadge from "../components/StatusBadge";
 import TokenTable from "../components/TokenTable";
 
@@ -104,6 +105,34 @@ export default function BotDetail() {
             )}
           </div>
         </Section>
+
+        {/* Channel Health */}
+        {bot.channel_statuses?.length > 0 && (
+          <Section title="Channel Health">
+            <div className="space-y-2">
+              {bot.channel_statuses.map((ch) => (
+                <div
+                  key={ch.channel_name}
+                  className="flex items-center justify-between rounded bg-gray-900 px-3 py-2 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <ChannelStatusDot status={ch.status} />
+                    <span className="font-medium text-white">{ch.channel_name}</span>
+                    <span className="capitalize text-gray-400">{ch.status}</span>
+                  </div>
+                  <div className="text-right text-xs text-gray-500">
+                    {ch.error_message && (
+                      <span className="mr-3 text-red-400">{ch.error_message}</span>
+                    )}
+                    {ch.last_seen
+                      ? `Seen ${new Date(ch.last_seen).toLocaleString()}`
+                      : ""}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
 
         {/* Activity */}
         <Section title="Activity">

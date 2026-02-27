@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel, JSON, Column
 
 
@@ -49,6 +50,18 @@ class TokenAggregate(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utcnow)
 
 
+class ChannelStatus(SQLModel, table=True):
+    __tablename__ = "channel_statuses"
+    __table_args__ = (UniqueConstraint("bot_id", "channel_name"),)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    bot_id: str = Field(foreign_key="bots.id", index=True)
+    channel_name: str
+    status: str = Field(default="connected")  # connected | disconnected | error
+    error_message: Optional[str] = None
+    last_status_change: datetime = Field(default_factory=utcnow)
+    last_seen: datetime = Field(default_factory=utcnow)
+
+
 # --- Pydantic schemas for API requests/responses ---
 
 class BotRegisterRequest(SQLModel):
@@ -83,6 +96,8 @@ class BotSummary(SQLModel):
     computed_status: str = "offline"
     message_count: int = 0
     error_count: int = 0
+    channels_up: int = 0
+    channels_total: int = 0
 
 
 class TokenUsageSegment(SQLModel):
@@ -101,6 +116,14 @@ class TokenUsageDetail(SQLModel):
     mtd_out: int = 0
 
 
+class ChannelStatusResponse(SQLModel):
+    channel_name: str
+    status: str
+    error_message: Optional[str] = None
+    last_status_change: datetime
+    last_seen: datetime
+
+
 class BotDetail(SQLModel):
     id: str
     name: str
@@ -114,6 +137,7 @@ class BotDetail(SQLModel):
     uptime_seconds: Optional[int] = None
     models: list[str] = []
     channels: list[str] = []
+    channel_statuses: list[ChannelStatusResponse] = []
     skills: list[str] = []
     tools: list[dict] = []
     # Activity

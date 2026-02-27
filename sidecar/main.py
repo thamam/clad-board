@@ -21,7 +21,7 @@ REGISTRATION_TOKEN = os.environ.get("REGISTRATION_TOKEN", "")
 LOG_PATH = os.environ.get("LOG_PATH", "stdout")
 
 REQUIRED_FIELDS = {"timestamp", "bot_id", "event_type", "payload"}
-VALID_EVENT_TYPES = {"startup", "heartbeat", "message", "token_usage", "error"}
+VALID_EVENT_TYPES = {"startup", "heartbeat", "message", "token_usage", "error", "channel_status"}
 BUFFER_MAX = 1000
 BATCH_SIZE = 50
 FLUSH_INTERVAL = 5  # seconds

@@ -41,6 +41,10 @@ def main() -> None:
         ],
     })
 
+    # Initial channel statuses — both connected
+    emit("channel_status", {"channel_name": "telegram", "status": "connected"})
+    emit("channel_status", {"channel_name": "whatsapp", "status": "connected"})
+
     uptime = 0
     msg_count = 0
 
@@ -60,6 +64,12 @@ def main() -> None:
         # Occasional error
         if msg_count % 10 == 7:
             emit("error", {"message": "Connection timeout to Telegram API", "severity": "warning"})
+
+        # Simulate whatsapp disconnect/reconnect cycle
+        if msg_count % 12 == 8:
+            emit("channel_status", {"channel_name": "whatsapp", "status": "disconnected", "error_message": "Connection closed by peer"})
+        if msg_count % 12 == 10:
+            emit("channel_status", {"channel_name": "whatsapp", "status": "connected"})
 
         msg_count += 1
 

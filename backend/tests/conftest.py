@@ -8,7 +8,7 @@ from sqlmodel import Session, SQLModel, create_engine
 os.environ["DASHBOARD_USER"] = "testuser"
 os.environ["DASHBOARD_PASS"] = "testpass"
 
-from backend.models import Bot, Event, TokenAggregate  # noqa: F401 — register models in metadata
+from backend.models import Bot, ChannelStatus, Event, TokenAggregate  # noqa: F401 — register models in metadata
 from backend.database import get_session
 from backend.main import app
 

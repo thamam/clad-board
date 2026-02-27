@@ -193,3 +193,96 @@ def test_heartbeat_updates_status_to_online(client, basic_auth, session):
     bots = response.json()
     bot = next(b for b in bots if b["id"] == bot_id)
     assert bot["computed_status"] == "online"
+
+
+def _register_and_get_token(client, basic_auth, name="Test Bot"):
+    reg = client.post(
+        "/api/register",
+        json={"name": name, "bot_class": "openclaw"},
+        auth=basic_auth,
+    ).json()
+    return reg["bot_id"], reg["token"]
+
+
+def test_ingest_channel_status(client, basic_auth):
+    bot_id, token = _register_and_get_token(client, basic_auth, "Channel Bot")
+    now = datetime.now(timezone.utc).isoformat()
+
+    client.post(
+        "/api/ingest",
+        json=[{
+            "timestamp": now,
+            "bot_id": bot_id,
+            "event_type": "channel_status",
+            "payload": {"channel_name": "telegram", "status": "connected"},
+        }],
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    detail = client.get(f"/api/bots/{bot_id}", auth=basic_auth).json()
+    assert len(detail["channel_statuses"]) == 1
+    assert detail["channel_statuses"][0]["channel_name"] == "telegram"
+    assert detail["channel_statuses"][0]["status"] == "connected"
+
+
+def test_channel_status_upsert(client, basic_auth):
+    bot_id, token = _register_and_get_token(client, basic_auth, "Upsert Bot")
+    now = datetime.now(timezone.utc).isoformat()
+
+    # First: connected
+    client.post(
+        "/api/ingest",
+        json=[{
+            "timestamp": now,
+            "bot_id": bot_id,
+            "event_type": "channel_status",
+            "payload": {"channel_name": "whatsapp", "status": "connected"},
+        }],
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    # Second: disconnected
+    client.post(
+        "/api/ingest",
+        json=[{
+            "timestamp": now,
+            "bot_id": bot_id,
+            "event_type": "channel_status",
+            "payload": {"channel_name": "whatsapp", "status": "disconnected", "error_message": "Connection lost"},
+        }],
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    detail = client.get(f"/api/bots/{bot_id}", auth=basic_auth).json()
+    assert len(detail["channel_statuses"]) == 1  # upserted, not duplicated
+    assert detail["channel_statuses"][0]["status"] == "disconnected"
+    assert detail["channel_statuses"][0]["error_message"] == "Connection lost"
+
+
+def test_channel_health_summary(client, basic_auth):
+    bot_id, token = _register_and_get_token(client, basic_auth, "Health Bot")
+    now = datetime.now(timezone.utc).isoformat()
+
+    client.post(
+        "/api/ingest",
+        json=[
+            {
+                "timestamp": now,
+                "bot_id": bot_id,
+                "event_type": "channel_status",
+                "payload": {"channel_name": "telegram", "status": "connected"},
+            },
+            {
+                "timestamp": now,
+                "bot_id": bot_id,
+                "event_type": "channel_status",
+                "payload": {"channel_name": "whatsapp", "status": "disconnected"},
+            },
+        ],
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    bots = client.get("/api/bots", auth=basic_auth).json()
+    bot = next(b for b in bots if b["id"] == bot_id)
+    assert bot["channels_up"] == 1
+    assert bot["channels_total"] == 2

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ChannelHealthBadge from "./ChannelHealthBadge";
 import StatusBadge from "./StatusBadge";
 
 function timeAgo(dateStr) {
@@ -18,7 +19,10 @@ export default function BotCard({ bot }) {
     >
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white">{bot.name}</h3>
-        <StatusBadge status={bot.computed_status} />
+        <div className="flex items-center gap-2">
+          <ChannelHealthBadge channelsUp={bot.channels_up} channelsTotal={bot.channels_total} />
+          <StatusBadge status={bot.computed_status} />
+        </div>
       </div>
 
       <p className="mb-3 text-sm text-gray-400">

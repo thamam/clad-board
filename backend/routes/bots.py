@@ -6,7 +6,7 @@ from sqlmodel import Session, func, select
 from backend.aggregation import get_token_usage_detail
 from backend.auth import require_basic_auth
 from backend.database import get_session
-from backend.models import Bot, BotDetail, BotSummary, Event, utcnow
+from backend.models import Bot, BotDetail, BotSummary, ChannelStatus, ChannelStatusResponse, Event, utcnow
 
 router = APIRouter(prefix="/api", tags=["bots"])
 
@@ -42,6 +42,12 @@ def list_bots(
             )
         ).one()
 
+        channel_records = session.exec(
+            select(ChannelStatus).where(ChannelStatus.bot_id == bot.id)
+        ).all()
+        channels_total = len(channel_records)
+        channels_up = sum(1 for ch in channel_records if ch.status == "connected")
+
         result.append(
             BotSummary(
                 id=bot.id,
@@ -53,6 +59,8 @@ def list_bots(
                 computed_status=_compute_status(bot.last_heartbeat),
                 message_count=msg_count,
                 error_count=err_count,
+                channels_up=channels_up,
+                channels_total=channels_total,
             )
         )
     return result
@@ -120,6 +128,21 @@ def get_bot_detail(
     # Token usage
     token_usage = get_token_usage_detail(bot_id, session)
 
+    # Channel statuses
+    channel_records = session.exec(
+        select(ChannelStatus).where(ChannelStatus.bot_id == bot_id)
+    ).all()
+    channel_statuses = [
+        ChannelStatusResponse(
+            channel_name=ch.channel_name,
+            status=ch.status,
+            error_message=ch.error_message,
+            last_status_change=ch.last_status_change,
+            last_seen=ch.last_seen,
+        )
+        for ch in channel_records
+    ]
+
     return BotDetail(
         id=bot.id,
         name=bot.name,
@@ -132,6 +155,7 @@ def get_bot_detail(
         uptime_seconds=uptime,
         models=startup.get("models", []),
         channels=startup.get("channels", []),
+        channel_statuses=channel_statuses,
         skills=startup.get("skills", []),
         tools=startup.get("tools", []),
         messages_in=messages_in,
